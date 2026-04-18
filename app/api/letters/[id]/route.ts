@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { findLetterById } from "@/lib/db/letter-queries";
 import { serializeLetter } from "@/lib/letter-serialize";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -17,7 +17,7 @@ export async function GET(request: Request, context: Ctx) {
 
   try {
     const session = await auth();
-    const letter = await prisma.letter.findUnique({ where: { id } });
+    const letter = await findLetterById(id);
     if (!letter) {
       return NextResponse.json({ error: "Carta no encontrada." }, { status: 404 });
     }

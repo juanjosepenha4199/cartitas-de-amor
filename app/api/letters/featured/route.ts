@@ -1,19 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { listPublicLetters } from "@/lib/db/letter-queries";
 import { serializeLetter } from "@/lib/letter-serialize";
-
-function scheduledOk() {
-  return {
-    OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }],
-  };
-}
 
 export async function GET() {
   try {
-    const letters = await prisma.letter.findMany({
-      where: { isPublic: true, ...scheduledOk() },
-      take: 80,
-    });
+    const letters = await listPublicLetters("", { limit: 80 });
     if (letters.length === 0) {
       return NextResponse.json({ letter: null });
     }

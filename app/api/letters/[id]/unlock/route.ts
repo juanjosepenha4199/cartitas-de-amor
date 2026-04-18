@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { findLetterById } from "@/lib/db/letter-queries";
 import { serializeLetter } from "@/lib/letter-serialize";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -11,7 +11,7 @@ export async function POST(request: Request, context: Ctx) {
     const body = await request.json();
     const password = String(body.password ?? "");
 
-    const letter = await prisma.letter.findUnique({ where: { id } });
+    const letter = await findLetterById(id);
     if (!letter) {
       return NextResponse.json({ error: "Carta no encontrada." }, { status: 404 });
     }

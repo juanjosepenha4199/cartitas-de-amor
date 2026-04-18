@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+
+import { emailExists, insertUser } from "@/lib/db/users";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -23,8 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const exists = await prisma.user.findUnique({ where: { email } });
-    if (exists) {
+    if (await emailExists(email)) {
       return NextResponse.json(
         { error: "Ese email ya está registrado." },
         { status: 409 },
@@ -32,12 +32,10 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.create({
-      data: {
-        email,
-        name: name || null,
-        passwordHash,
-      },
+    await insertUser({
+      email,
+      name: name || null,
+      passwordHash,
     });
 
     return NextResponse.json({ ok: true });

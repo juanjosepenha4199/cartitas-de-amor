@@ -1,29 +1,16 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { dbErrorHint } from "@/lib/db/errors";
+import {
+  insertLetter,
+  listLettersForClient,
+  listLettersForUser,
+  listPublicLetters,
+} from "@/lib/db/letter-queries";
 import { serializeLetter } from "@/lib/letter-serialize";
 
-function prismaErrorHint(e: unknown): string | null {
-  if (e instanceof Prisma.PrismaClientKnownRequestError) {
-    if (e.code === "P1001") {
-      return "No hay conexión con la base de datos. Revisá DATABASE_URL (Neon) en Vercel y en .env local.";
-    }
-  }
-  if (e instanceof Prisma.PrismaClientInitializationError) {
-    return "La base de datos no está lista. Cierra el servidor de desarrollo, ejecuta npx prisma generate y npx prisma db push, y vuelve a iniciar.";
-  }
-  return null;
-}
-
 const MAX_CONTENT = 300;
-
-function scheduledOk() {
-  return {
-    OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }],
-  };
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -31,32 +18,13 @@ export async function GET(request: Request) {
   const search = searchParams.get("q")?.trim() ?? "";
   const clientId = searchParams.get("clientId")?.trim() ?? "";
 
-  const searchWhere =
-    search.length > 0
-      ? {
-          OR: [
-            { content: { contains: search, mode: "insensitive" as const } },
-            { authorName: { contains: search, mode: "insensitive" as const } },
-            { recipientName: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : {};
-
   try {
     if (filter === "mine") {
       const session = await auth();
       const uid = session?.user?.id;
 
       if (uid) {
-        const letters = await prisma.letter.findMany({
-          where: {
-            userId: uid,
-            ...searchWhere,
-            ...scheduledOk(),
-          },
-          orderBy: { createdAt: "desc" },
-          take: 120,
-        });
+        const letters = await listLettersForUser({ userId: uid, search });
         return NextResponse.json({
           letters: letters.map((l) =>
             serializeLetter(l, { revealContent: true }),
@@ -67,14 +35,9 @@ export async function GET(request: Request) {
       if (!clientId) {
         return NextResponse.json({ letters: [] });
       }
-      const letters = await prisma.letter.findMany({
-        where: {
-          clientAuthorId: clientId,
-          ...searchWhere,
-          ...scheduledOk(),
-        },
-        orderBy: { createdAt: "desc" },
-        take: 120,
+      const letters = await listLettersForClient({
+        clientAuthorId: clientId,
+        search,
       });
       return NextResponse.json({
         letters: letters.map((l) =>
@@ -83,22 +46,11 @@ export async function GET(request: Request) {
       });
     }
 
-    const baseWhere = {
-      isPublic: true,
-      ...scheduledOk(),
-      ...searchWhere,
-    };
-
     if (filter === "beautiful") {
-      const letters = await prisma.letter.findMany({
-        where: baseWhere,
-        take: 120,
-      });
+      const letters = await listPublicLetters(search, { limit: 120 });
       const sorted = [...letters].sort((a, b) => {
-        const sa =
-          a.heartCount * 3 + a.blossomCount * 2 + a.sparkleCount;
-        const sb =
-          b.heartCount * 3 + b.blossomCount * 2 + b.sparkleCount;
+        const sa = a.heartCount * 3 + a.blossomCount * 2 + a.sparkleCount;
+        const sb = b.heartCount * 3 + b.blossomCount * 2 + b.sparkleCount;
         if (sb !== sa) return sb - sa;
         return b.createdAt.getTime() - a.createdAt.getTime();
       });
@@ -109,11 +61,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const letters = await prisma.letter.findMany({
-      where: baseWhere,
-      orderBy: { createdAt: "desc" },
-      take: 120,
-    });
+    const letters = await listPublicLetters(search, { limit: 120 });
 
     return NextResponse.json({
       letters: letters.map((l) =>
@@ -122,7 +70,7 @@ export async function GET(request: Request) {
     });
   } catch (e) {
     console.error(e);
-    const hint = prismaErrorHint(e);
+    const hint = dbErrorHint(e);
     return NextResponse.json(
       { error: hint ?? "No se pudieron cargar las cartas." },
       { status: 500 },
@@ -179,24 +127,22 @@ export async function POST(request: Request) {
     const passwordHash =
       isSecret && password ? await bcrypt.hash(password, 10) : null;
 
-    const letter = await prisma.letter.create({
-      data: {
-        content,
-        envelopeColor,
-        flowerType,
-        flowerDensity,
-        paperType,
-        fontStyle,
-        sticker,
-        recipientName,
-        authorName,
-        isPublic,
-        isSecret,
-        passwordHash,
-        clientAuthorId: session?.user?.id ? null : clientAuthorId,
-        userId: session?.user?.id ?? undefined,
-        scheduledAt,
-      },
+    const letter = await insertLetter({
+      content,
+      envelopeColor,
+      flowerType,
+      flowerDensity,
+      paperType,
+      fontStyle,
+      sticker,
+      recipientName,
+      authorName,
+      isPublic,
+      isSecret,
+      passwordHash,
+      clientAuthorId: session?.user?.id ? null : clientAuthorId,
+      userId: session?.user?.id ?? null,
+      scheduledAt,
     });
 
     return NextResponse.json({
@@ -204,7 +150,7 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     console.error(e);
-    const hint = prismaErrorHint(e);
+    const hint = dbErrorHint(e);
     return NextResponse.json(
       { error: hint ?? "No se pudo guardar la carta." },
       { status: 500 },

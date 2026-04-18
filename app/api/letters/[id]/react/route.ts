@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { incrementLetterReaction } from "@/lib/db/letter-queries";
 import { serializeLetter } from "@/lib/letter-serialize";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -16,22 +16,17 @@ export async function POST(request: Request, context: Ctx) {
       return NextResponse.json({ error: "Reacción no válida." }, { status: 400 });
     }
 
-    const existing = await prisma.letter.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json({ error: "Carta no encontrada." }, { status: 404 });
-    }
-
     const field =
       type === "heart"
-        ? "heartCount"
+        ? "heart_count"
         : type === "blossom"
-          ? "blossomCount"
-          : "sparkleCount";
+          ? "blossom_count"
+          : "sparkle_count";
 
-    const letter = await prisma.letter.update({
-      where: { id },
-      data: { [field]: { increment: 1 } },
-    });
+    const letter = await incrementLetterReaction(id, field);
+    if (!letter) {
+      return NextResponse.json({ error: "Carta no encontrada." }, { status: 404 });
+    }
 
     return NextResponse.json({
       letter: serializeLetter(letter, { revealContent: !letter.isSecret }),

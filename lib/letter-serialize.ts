@@ -1,4 +1,4 @@
-import type { Letter } from "@prisma/client";
+import type { Letter } from "@/lib/letter-types";
 
 export type LetterPublic = Omit<Letter, "passwordHash" | "content"> & {
   content: string | null;
