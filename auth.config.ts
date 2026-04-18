@@ -31,7 +31,8 @@ export const authConfig: NextAuthConfig = {
 
       if (
         pathname.startsWith("/api/auth") ||
-        pathname === "/api/register"
+        pathname === "/api/register" ||
+        pathname === "/api/health/db"
       ) {
         return true;
       }
