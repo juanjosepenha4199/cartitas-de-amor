@@ -31,7 +31,12 @@ export function RegistroForm() {
           password,
         }),
       });
-      const data = await res.json();
+      let data: { error?: string } = {};
+      try {
+        data = (await res.json()) as { error?: string };
+      } catch {
+        /* respuesta no JSON */
+      }
       if (!res.ok) {
         setError(data.error ?? "No se pudo registrar.");
         return;

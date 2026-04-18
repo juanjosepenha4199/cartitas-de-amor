@@ -41,9 +41,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return NextResponse.json(
-      { error: "No se pudo crear la cuenta." },
-      { status: 500 },
-    );
+    const msg = registerErrorMessage(e);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
+}
+
+function registerErrorMessage(e: unknown): string {
+  const raw =
+    e && typeof e === "object" && "message" in e
+      ? String((e as { message: unknown }).message)
+      : String(e);
+  const code =
+    e && typeof e === "object" && "code" in e
+      ? String((e as { code: unknown }).code)
+      : "";
+
+  if (code === "42P01" || /relation .* does not exist/i.test(raw)) {
+    return "La base no tiene las tablas. Ejecutá lib/db/schema.sql en Neon (SQL Editor).";
+  }
+  if (
+    /DATABASE_URL|connection refused|fetch failed|ENOTFOUND|timeout/i.test(raw)
+  ) {
+    return "No se pudo conectar a la base. Revisá DATABASE_URL en el servidor.";
+  }
+  return "No se pudo crear la cuenta.";
 }
