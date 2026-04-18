@@ -1,14 +1,9 @@
 import { Suspense } from "react";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 
 import { PortadaContent } from "./portada-content";
 
-export default async function PortadaPage() {
-  const session = await auth();
-  if (session) {
-    redirect("/");
-  }
+/** Quien ya tiene sesión la redirige el middleware a `/`. */
+export default function PortadaPage() {
   return (
     <Suspense
       fallback={
