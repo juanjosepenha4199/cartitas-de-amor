@@ -7,16 +7,19 @@ import { signOut, useSession } from "next-auth/react";
 export function SiteHeader({
   dark,
   onToggleDark,
+  variant = "full",
 }: {
   dark: boolean;
   onToggleDark: () => void;
+  variant?: "full" | "gate";
 }) {
   const { status } = useSession();
+  const homeHref = variant === "gate" ? "/portada" : "/";
 
   return (
     <header className="sticky top-0 z-50 border-b border-stone-200/70 bg-[var(--surface)]/85 backdrop-blur-md dark:border-white/10">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2">
+        <Link href={homeHref} className="group flex items-center gap-2">
           <motion.span
             className="text-xl sm:text-2xl"
             whileHover={{ scale: 1.06, rotate: [-2, 2, 0] }}
@@ -36,19 +39,23 @@ export function SiteHeader({
         </Link>
 
         <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-          <Link
-            href="/crear"
-            className="rounded-full bg-stone-900 px-3 py-1.5 text-sm text-white shadow-sm transition hover:bg-stone-800 dark:bg-garden-100 dark:text-garden-900 dark:hover:bg-white"
-          >
-            Crear
-          </Link>
-          <Link
-            href="/jardin"
-            className="rounded-full border border-stone-200 bg-white/70 px-3 py-1.5 text-sm text-stone-800 transition hover:border-stone-300 dark:border-white/15 dark:bg-white/5 dark:text-garden-50 dark:hover:border-white/25"
-          >
-            Jardín
-          </Link>
-          {status === "authenticated" ? (
+          {variant === "full" ? (
+            <>
+              <Link
+                href="/crear"
+                className="rounded-full bg-stone-900 px-3 py-1.5 text-sm text-white shadow-sm transition hover:bg-stone-800 dark:bg-garden-100 dark:text-garden-900 dark:hover:bg-white"
+              >
+                Crear
+              </Link>
+              <Link
+                href="/jardin"
+                className="rounded-full border border-stone-200 bg-white/70 px-3 py-1.5 text-sm text-stone-800 transition hover:border-stone-300 dark:border-white/15 dark:bg-white/5 dark:text-garden-50 dark:hover:border-white/25"
+              >
+                Jardín
+              </Link>
+            </>
+          ) : null}
+          {variant === "full" && status === "authenticated" ? (
             <>
               <Link
                 href="/perfil"
@@ -58,20 +65,21 @@ export function SiteHeader({
               </Link>
               <button
                 type="button"
-                onClick={() => void signOut({ callbackUrl: "/" })}
+                onClick={() => void signOut({ callbackUrl: "/portada" })}
                 className="rounded-full border border-stone-200 bg-white/70 px-3 py-1.5 text-xs text-stone-700 transition hover:border-stone-300 dark:border-white/15 dark:bg-white/5 dark:text-garden-100 sm:text-sm"
               >
                 Salir
               </button>
             </>
-          ) : (
+          ) : null}
+          {variant === "full" && status !== "authenticated" ? (
             <Link
               href="/entrar"
               className="rounded-full border border-stone-200 bg-white/70 px-3 py-1.5 text-sm text-stone-800 transition hover:border-stone-300 dark:border-white/15 dark:bg-white/5 dark:text-garden-50"
             >
               Entrar
             </Link>
-          )}
+          ) : null}
           <button
             type="button"
             onClick={onToggleDark}

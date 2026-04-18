@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { PetalRain } from "@/components/petal-rain";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
@@ -8,6 +9,11 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 const STORAGE = "gardenLetters_theme";
 
 export function ThemeRoot({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const gateLayout =
+    pathname === "/portada" ||
+    pathname === "/entrar" ||
+    pathname === "/registro";
   const [dark, setDark] = useState(false);
   const [petals, setPetals] = useState(true);
 
@@ -39,6 +45,7 @@ export function ThemeRoot({ children }: { children: React.ReactNode }) {
       <SiteHeader
         dark={dark}
         onToggleDark={() => setDark((d) => !d)}
+        variant={gateLayout ? "gate" : "full"}
       />
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {children}

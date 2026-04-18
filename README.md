@@ -46,9 +46,9 @@ Neon y Vercel en la misma región cuando podés, para menor latencia.
 
 ## Comportamiento de cuentas
 
+- **Sin sesión** no se puede usar la app: el middleware redirige a **`/portada`** (entrada o registro). Las rutas de API (excepto `/api/auth` y `/api/register`) exigen JWT.
 - Al **registrarte / entrar**, las cartas nuevas se guardan con `userId` (tu jardín en **Perfil** y filtro **Solo mías** en el jardín público).
-- Quien no entra puede seguir creando cartas anónimas con el identificador del navegador (modo compatibilidad).
-- **Perfil** está protegido por `app/perfil/layout.tsx`: redirige a `/entrar` si no hay sesión (evita middleware en Edge con JWT).
+- **Perfil** sigue protegido en servidor por `app/perfil/layout.tsx`.
 
 ## Scripts útiles
 

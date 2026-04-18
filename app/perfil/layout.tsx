@@ -8,7 +8,7 @@ export default async function PerfilLayout({
 }) {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect("/entrar?callbackUrl=/perfil");
+    redirect("/portada?callbackUrl=/perfil");
   }
   return <>{children}</>;
 }

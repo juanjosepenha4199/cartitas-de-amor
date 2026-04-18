@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-export function EntrarForm() {
+export function RegistroForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
-  const registroQuery = new URLSearchParams({ callbackUrl }).toString();
+  const entrarQuery = new URLSearchParams({ callbackUrl }).toString();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +22,32 @@ export function EntrarForm() {
     setError(null);
     setBusy(true);
     try {
-      const res = await signIn("credentials", {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim() || undefined,
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo registrar.");
+        return;
+      }
+      const sign = await signIn("credentials", {
         email: email.trim().toLowerCase(),
         password,
         redirect: false,
         callbackUrl,
       });
-      if (res?.error) {
-        setError("Email o contraseña incorrectos.");
+      if (sign?.error) {
+        router.push(`/entrar?${entrarQuery}`);
         return;
       }
-      window.location.href = callbackUrl;
+      router.push(callbackUrl);
+      router.refresh();
     } finally {
       setBusy(false);
     }
@@ -44,10 +61,10 @@ export function EntrarForm() {
         className="text-center"
       >
         <h1 className="font-serif-romantic text-3xl text-stone-900 dark:text-garden-50">
-          Entrar
+          Crear cuenta
         </h1>
         <p className="mt-2 text-sm text-stone-600 dark:text-garden-200/90">
-          Tu jardín y tu perfil te esperan.
+          Un solo jardín por cuenta: tus cartas quedan asociadas a vos.
         </p>
       </motion.div>
 
@@ -55,6 +72,19 @@ export function EntrarForm() {
         onSubmit={(e) => void onSubmit(e)}
         className="space-y-4 rounded-3xl border border-stone-200/80 bg-[var(--surface)]/90 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
       >
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-stone-700 dark:text-garden-100">
+            Nombre (opcional)
+          </span>
+          <input
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input-like"
+            placeholder="Cómo te gusta firmar"
+          />
+        </label>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-stone-700 dark:text-garden-100">
             Email
@@ -70,12 +100,13 @@ export function EntrarForm() {
         </label>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-stone-700 dark:text-garden-100">
-            Contraseña
+            Contraseña (mín. 8)
           </span>
           <input
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-like"
@@ -89,15 +120,15 @@ export function EntrarForm() {
           disabled={busy}
           className="w-full rounded-full bg-stone-900 py-2.5 text-sm font-medium text-white transition enabled:hover:bg-stone-800 disabled:opacity-60 dark:bg-garden-100 dark:text-garden-900 dark:hover:bg-white"
         >
-          {busy ? "Entrando…" : "Entrar"}
+          {busy ? "Creando…" : "Registrarme"}
         </button>
         <p className="text-center text-sm text-stone-600 dark:text-garden-200/85">
-          ¿No tenés cuenta?{" "}
+          ¿Ya tenés cuenta?{" "}
           <Link
-            href={`/registro?${registroQuery}`}
+            href={`/entrar?${entrarQuery}`}
             className="font-medium text-stone-900 underline underline-offset-4 dark:text-garden-50"
           >
-            Registrate
+            Entrar
           </Link>
         </p>
       </form>
