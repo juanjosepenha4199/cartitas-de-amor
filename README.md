@@ -42,12 +42,16 @@ Rutas útiles: `/entrar`, `/registro`, `/perfil` (requiere sesión), `/jardin`, 
 ## Despliegue en Vercel
 
 1. Subí el repo a GitHub/GitLab y conectalo en [Vercel](https://vercel.com).
-2. En el proyecto Vercel → **Settings → Environment Variables**, agregá:
-   - `DATABASE_URL` (Neon)
-   - `AUTH_SECRET` (el mismo tipo de secreto que en local)
-   - Opcional: `AUTH_URL` = `https://tu-dominio.vercel.app`
-3. **Build command** por defecto: `prisma generate && next build` (ya está en `package.json`).
-4. Tras el primer deploy, ejecutá `npx prisma db push` o migraciones **contra la misma URL de Neon** desde tu máquina (o usá Neon SQL editor / CI).
+2. **Antes del primer deploy**, en **Settings → Environment Variables**, creá al menos (marcá *Production*, *Preview* y *Development* según uses):
+   - **`DATABASE_URL`** — connection string de Neon (sin esto el `prisma generate` del build falla).
+   - **`AUTH_SECRET`** — secreto largo (`openssl rand -base64 32`).
+   - Opcional: **`AUTH_URL`** = `https://tu-proyecto.vercel.app` (ayuda a cookies/redirecciones en producción).
+3. **Install command** por defecto (`npm install`) ya **no** ejecuta Prisma; el cliente se genera en el **build** con `prisma generate && next build`.
+4. Tras el primer deploy, asegurate de tener las tablas en Neon: `npx prisma db push` (con la misma `DATABASE_URL`) desde tu PC o un job de CI.
+
+### Error `PrismaConfigEnvError: Missing required environment variable: DATABASE_URL`
+
+Suele ser: variable no definida en Vercel, o un `prisma.config.ts` viejo que la exigía al cargar. Este repo **no** usa `prisma.config.ts`: solo hace falta **`DATABASE_URL` en el dashboard de Vercel** (y redeploy).
 
 Neon y Vercel están en la misma región cuando podés, para menor latencia.
 
