@@ -1,0 +1,24 @@
+export type LetterDto = {
+  id: string;
+  content: string | null;
+  locked: boolean;
+  envelopeColor: string;
+  flowerType: string;
+  flowerDensity: string;
+  paperType: string;
+  fontStyle: string;
+  sticker: string;
+  recipientName: string | null;
+  isPublic: boolean;
+  isSecret: boolean;
+  authorName: string;
+  clientAuthorId: string | null;
+  heartCount: number;
+  blossomCount: number;
+  sparkleCount: number;
+  scheduledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId: string | null;
+  score?: number;
+};

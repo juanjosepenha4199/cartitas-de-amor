@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: garden
+      POSTGRES_PASSWORD: garden
+      POSTGRES_DB: garden_letters
+    ports:
+      - "5432:5432"
+    volumes:
+      - garden_pg:/var/lib/postgresql/data
+
+volumes:
+  garden_pg:

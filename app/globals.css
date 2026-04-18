@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+:root {
+  --background: #f6f1ea;
+  --foreground: #2c241c;
+  --surface: #fdfbf7;
+  --accent: #c084a8;
+  --garden-green: #7d9b84;
+}
+
+.dark {
+  --background: #1a1520;
+  --foreground: #f3e9f0;
+  --surface: #221a28;
+  --accent: #e8b4d0;
+  --garden-green: #8fb89a;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.font-hand {
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.15em;
+}
+
+.font-serif-romantic {
+  font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+}
+
+.font-minimal {
+  font-family: var(--font-dm), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+@layer components {
+  .select-like,
+  .input-like {
+    @apply w-full rounded-2xl border border-stone-200 bg-white/90 px-3 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-400 dark:border-white/10 dark:bg-black/20 dark:text-garden-50 dark:focus:border-white/30;
+  }
+}
