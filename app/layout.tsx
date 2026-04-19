@@ -65,6 +65,10 @@ export const metadata: Metadata = {
   title: "GARDEN LETTERS — cartas en flor",
   description:
     "Crea y comparte cartas digitales con estética de sobres y flores. Un jardín romántico para dos.",
+  icons: {
+    icon: [{ url: "/garden-letters-icon.png", type: "image/png" }],
+    apple: "/garden-letters-icon.png",
+  },
 };
 
 export default function RootLayout({
