@@ -1,8 +1,10 @@
 -- Ejecutá este script en Neon → SQL Editor (base nueva o vacía).
+-- Si ya tenías datos: ejecutá antes lib/db/migration-002-username-recipient.sql
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
+  username TEXT NOT NULL UNIQUE,
   name TEXT,
   email_verified TIMESTAMPTZ,
   image TEXT,
@@ -31,7 +33,9 @@ CREATE TABLE IF NOT EXISTS letters (
   scheduled_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  user_id TEXT REFERENCES users (id) ON DELETE SET NULL
+  user_id TEXT REFERENCES users (id) ON DELETE SET NULL,
+  recipient_user_id TEXT REFERENCES users (id) ON DELETE SET NULL,
+  image_attachments TEXT NOT NULL DEFAULT '[]'
 );
 
 CREATE INDEX IF NOT EXISTS letters_public_created_idx
@@ -42,3 +46,6 @@ CREATE INDEX IF NOT EXISTS letters_client_author_idx
 
 CREATE INDEX IF NOT EXISTS letters_user_created_idx
   ON letters (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS letters_recipient_user_idx
+  ON letters (recipient_user_id, created_at DESC);

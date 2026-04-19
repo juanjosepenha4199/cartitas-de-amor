@@ -11,6 +11,7 @@ export function RegistroForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const entrarQuery = new URLSearchParams({ callbackUrl }).toString();
+  const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,6 +27,7 @@ export function RegistroForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          username: username.trim().toLowerCase(),
           name: name.trim() || undefined,
           email: email.trim().toLowerCase(),
           password,
@@ -79,7 +81,28 @@ export function RegistroForm() {
       >
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-stone-700 dark:text-garden-100">
-            Nombre (opcional)
+            Nombre de usuario <span className="text-red-600">*</span>
+          </span>
+          <input
+            type="text"
+            autoComplete="username"
+            required
+            value={username}
+            onChange={(e) =>
+              setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+            }
+            className="input-like"
+            placeholder="solo minúsculas, números y _"
+            minLength={3}
+            maxLength={20}
+          />
+          <span className="block text-xs text-stone-500 dark:text-garden-300/80">
+            Es único: así te pueden enviar cartas. Entre 3 y 20 caracteres.
+          </span>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium text-stone-700 dark:text-garden-100">
+            Nombre para mostrar (opcional)
           </span>
           <input
             type="text"

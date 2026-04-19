@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
-import { Caveat, Cormorant_Garamond, DM_Sans } from "next/font/google";
+import {
+  Caveat,
+  Cormorant_Garamond,
+  DM_Sans,
+  Great_Vibes,
+  Indie_Flower,
+  Nunito,
+  Pacifico,
+  Parisienne,
+} from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { ThemeRoot } from "@/components/theme-root";
@@ -22,6 +31,36 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600"],
 });
 
+const greatVibes = Great_Vibes({
+  subsets: ["latin"],
+  variable: "--font-great-vibes",
+  weight: ["400"],
+});
+
+const parisienne = Parisienne({
+  subsets: ["latin"],
+  variable: "--font-parisienne",
+  weight: ["400"],
+});
+
+const indieFlower = Indie_Flower({
+  subsets: ["latin"],
+  variable: "--font-indie",
+  weight: ["400"],
+});
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  variable: "--font-pacifico",
+  weight: ["400"],
+});
+
+const nunitoRound = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito-round",
+  weight: ["500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "GARDEN LETTERS — cartas en flor",
   description:
@@ -36,7 +75,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${caveat.variable} ${cormorant.variable} ${dmSans.variable} min-h-screen antialiased`}
+        className={`${caveat.variable} ${cormorant.variable} ${dmSans.variable} ${greatVibes.variable} ${parisienne.variable} ${indieFlower.variable} ${pacifico.variable} ${nunitoRound.variable} min-h-screen antialiased`}
       >
         <Providers>
           <ThemeRoot>{children}</ThemeRoot>

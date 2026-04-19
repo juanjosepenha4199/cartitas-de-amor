@@ -21,25 +21,34 @@ export async function GET(request: Request, context: Ctx) {
     if (!letter) {
       return NextResponse.json({ error: "Carta no encontrada." }, { status: 404 });
     }
-    if (!scheduledVisible(letter.scheduledAt)) {
-      return NextResponse.json({ error: "Esta carta aún no florece." }, { status: 404 });
-    }
 
+    const uid = session?.user?.id;
     const isOwner = Boolean(
-      (session?.user?.id &&
-        letter.userId &&
-        session.user.id === letter.userId) ||
+      (uid && letter.userId && uid === letter.userId) ||
         (clientId &&
           letter.clientAuthorId &&
           clientId === letter.clientAuthorId),
     );
-    if (!letter.isPublic && !isOwner) {
+    const isRecipient = Boolean(
+      uid && letter.recipientUserId && uid === letter.recipientUserId,
+    );
+
+    if (
+      !scheduledVisible(letter.scheduledAt) &&
+      !isOwner &&
+      !isRecipient
+    ) {
+      return NextResponse.json({ error: "Esta carta aún no florece." }, { status: 404 });
+    }
+    const canReadPrivate = isOwner || isRecipient;
+
+    if (!letter.isPublic && !canReadPrivate) {
       return NextResponse.json({ error: "Carta no encontrada." }, { status: 404 });
     }
 
     return NextResponse.json({
       letter: serializeLetter(letter, {
-        revealContent: !letter.isSecret || isOwner,
+        revealContent: !letter.isSecret || isOwner || isRecipient,
       }),
     });
   } catch (e) {

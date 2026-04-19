@@ -27,10 +27,18 @@ export const PAPER_TYPES = [
 ] as const;
 
 export const FONT_STYLES = [
-  { id: "handwriting", label: "Manuscrita", className: "font-hand" },
+  { id: "handwriting", label: "Manuscrita suave", className: "font-hand" },
   { id: "serif", label: "Serif romántica", className: "font-serif-romantic" },
-  { id: "minimal", label: "Minimalista", className: "font-minimal" },
+  { id: "minimal", label: "Sans clara", className: "font-minimal" },
+  { id: "greatVibes", label: "Remolino elegante", className: "font-great-vibes" },
+  { id: "parisienne", label: "París chic", className: "font-parisienne" },
+  { id: "indie", label: "Carta de cuaderno", className: "font-indie" },
+  { id: "pacifico", label: "Caligráfica dulce", className: "font-pacifico" },
+  { id: "nunito", label: "Redondeada tierna", className: "font-nunito-round" },
 ] as const;
+
+/** Densidad fija de flores en el sobre (antes era configurable). */
+export const DEFAULT_FLOWER_DENSITY = "medium" as const;
 
 export const STICKERS = [
   { id: "none", label: "Sin sticker" },

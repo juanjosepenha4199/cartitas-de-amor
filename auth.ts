@@ -15,24 +15,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        const email = String(credentials?.email ?? "")
-          .trim()
-          .toLowerCase();
-        const password = String(credentials?.password ?? "");
-        if (!email || !password) return null;
+        try {
+          const email = String(credentials?.email ?? "")
+            .trim()
+            .toLowerCase();
+          const password = String(credentials?.password ?? "");
+          if (!email || !password) return null;
 
-        const user = await findUserByEmail(email);
-        if (!user?.password_hash) return null;
+          const user = await findUserByEmail(email);
+          if (!user?.password_hash) return null;
 
-        const ok = await bcrypt.compare(password, user.password_hash);
-        if (!ok) return null;
+          const ok = await bcrypt.compare(password, user.password_hash);
+          if (!ok) return null;
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            username: user.username ?? "",
+          };
+        } catch (e) {
+          console.error("[auth] authorize", e);
+          return null;
+        }
       },
     }),
   ],

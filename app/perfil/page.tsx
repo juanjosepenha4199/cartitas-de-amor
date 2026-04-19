@@ -58,7 +58,7 @@ export default function PerfilPage() {
           las cartas de tu cuenta y tus favoritas.
         </p>
         <p className="mt-1 text-xs text-stone-500 dark:text-garden-300/80">
-          {session?.user?.email}
+          @{session?.user?.username} · {session?.user?.email}
         </p>
       </header>
 
@@ -68,8 +68,11 @@ export default function PerfilPage() {
         <>
           <section className="space-y-4">
             <h2 className="font-serif-romantic text-2xl text-stone-800 dark:text-garden-50">
-              Mi jardín
+              Cartas que escribiste
             </h2>
+            <p className="text-sm text-stone-600 dark:text-garden-200/85">
+              Todas las que creaste con tu cuenta (para vos o para otros).
+            </p>
             {mine.length === 0 ? (
               <p className="text-sm text-stone-500 dark:text-garden-300/85">
                 Aún no hay cartas en tu jardín.{" "}
@@ -90,14 +93,13 @@ export default function PerfilPage() {
                         paperType={letter.paperType}
                         fontStyle={letter.fontStyle}
                         sticker={letter.sticker}
-                        content={
-                          letter.locked
-                            ? "🔒 Secreta"
-                            : (letter.content ?? "").slice(0, 120)
-                        }
+                        content={letter.content ?? ""}
+                        imageUrls={letter.imageAttachments ?? []}
                         recipientName={letter.recipientName}
                         authorName={letter.authorName}
-                        openAmount={0.25}
+                        openAmount={0}
+                        hideInnerContent
+                        showSeal
                         compact
                       />
                     </Link>
@@ -127,14 +129,13 @@ export default function PerfilPage() {
                         paperType={letter.paperType}
                         fontStyle={letter.fontStyle}
                         sticker={letter.sticker}
-                        content={
-                          letter.locked
-                            ? "🔒 Secreta"
-                            : (letter.content ?? "").slice(0, 120)
-                        }
+                        content={letter.content ?? ""}
+                        imageUrls={letter.imageAttachments ?? []}
                         recipientName={letter.recipientName}
                         authorName={letter.authorName}
-                        openAmount={0.25}
+                        openAmount={0}
+                        hideInnerContent
+                        showSeal
                         compact
                       />
                     </Link>

@@ -6,11 +6,31 @@ import {
   insertLetter,
   listLettersForClient,
   listLettersForUser,
+  listLettersReceivedByUser,
+  listLettersSelfToSelf,
   listPublicLetters,
 } from "@/lib/db/letter-queries";
+import { findUserByUsername } from "@/lib/db/users";
 import { serializeLetter } from "@/lib/letter-serialize";
+import { attachmentsJsonFromBody } from "@/lib/image-attach";
+import { MAX_LETTER_CONTENT_CHARS } from "@/lib/letter-limits";
+import { isValidUsername, normalizeUsername } from "@/lib/username";
 
-const MAX_CONTENT = 300;
+const MAX_MULTI_RECIPIENTS = 25;
+
+function parseRecipientUsernames(body: unknown): string[] | null {
+  if (body === null || typeof body !== "object") return null;
+  const raw = (body as { recipientUsernames?: unknown }).recipientUsernames;
+  if (!Array.isArray(raw)) return null;
+  const names: string[] = [];
+  for (const x of raw) {
+    if (typeof x !== "string") continue;
+    const u = normalizeUsername(x.replace(/^@/, ""));
+    if (!isValidUsername(u)) continue;
+    if (!names.includes(u)) names.push(u);
+  }
+  return names;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,10 +39,40 @@ export async function GET(request: Request) {
   const clientId = searchParams.get("clientId")?.trim() ?? "";
 
   try {
-    if (filter === "mine") {
-      const session = await auth();
-      const uid = session?.user?.id;
+    const session = await auth();
+    const uid = session?.user?.id;
 
+    if (filter === "received") {
+      if (!uid) {
+        return NextResponse.json(
+          { error: "Tenés que iniciar sesión." },
+          { status: 401 },
+        );
+      }
+      const letters = await listLettersReceivedByUser({ userId: uid, search });
+      return NextResponse.json({
+        letters: letters.map((l) =>
+          serializeLetter(l, { revealContent: true }),
+        ),
+      });
+    }
+
+    if (filter === "self_garden") {
+      if (!uid) {
+        return NextResponse.json(
+          { error: "Tenés que iniciar sesión." },
+          { status: 401 },
+        );
+      }
+      const letters = await listLettersSelfToSelf({ userId: uid, search });
+      return NextResponse.json({
+        letters: letters.map((l) =>
+          serializeLetter(l, { revealContent: true }),
+        ),
+      });
+    }
+
+    if (filter === "mine") {
       if (uid) {
         const letters = await listLettersForUser({ userId: uid, search });
         return NextResponse.json({
@@ -99,6 +149,10 @@ export async function POST(request: Request) {
     const clientAuthorId = body.clientAuthorId
       ? String(body.clientAuthorId).trim().slice(0, 64)
       : null;
+    const recipientUsernameRaw =
+      typeof body.recipientUsername === "string"
+        ? body.recipientUsername.trim()
+        : "";
     let scheduledAt: Date | null = null;
     if (body.scheduledAt) {
       const d = new Date(String(body.scheduledAt));
@@ -111,9 +165,9 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (content.length > MAX_CONTENT) {
+    if (content.length > MAX_LETTER_CONTENT_CHARS) {
       return NextResponse.json(
-        { error: `Máximo ${MAX_CONTENT} caracteres.` },
+        { error: `Máximo ${MAX_LETTER_CONTENT_CHARS.toLocaleString("es")} caracteres.` },
         { status: 400 },
       );
     }
@@ -124,10 +178,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const att = attachmentsJsonFromBody(body);
+    if (att.error) {
+      return NextResponse.json({ error: att.error }, { status: 400 });
+    }
+    const imageAttachmentsJson = att.json;
+
+    const multiNames = parseRecipientUsernames(body);
     const passwordHash =
       isSecret && password ? await bcrypt.hash(password, 10) : null;
 
-    const letter = await insertLetter({
+    const baseInsert = {
       content,
       envelopeColor,
       flowerType,
@@ -142,7 +203,110 @@ export async function POST(request: Request) {
       passwordHash,
       clientAuthorId: session?.user?.id ? null : clientAuthorId,
       userId: session?.user?.id ?? null,
+      imageAttachmentsJson,
       scheduledAt,
+    };
+
+    if (multiNames !== null && multiNames.length > 0) {
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          {
+            error:
+              "Para enviar a varias personas tenés que iniciar sesión.",
+          },
+          { status: 401 },
+        );
+      }
+      if (multiNames.length < 2) {
+        return NextResponse.json(
+          {
+            error:
+              "En modo varias personas necesitás al menos dos nicks distintos.",
+          },
+          { status: 400 },
+        );
+      }
+      if (multiNames.length > MAX_MULTI_RECIPIENTS) {
+        return NextResponse.json(
+          {
+            error: `Como máximo ${MAX_MULTI_RECIPIENTS} destinatarios por envío.`,
+          },
+          { status: 400 },
+        );
+      }
+      const resolved: { username: string; id: string }[] = [];
+      for (const uname of multiNames) {
+        const dest = await findUserByUsername(uname);
+        if (!dest) {
+          return NextResponse.json(
+            { error: `No existe ningún usuario con el nick «${uname}».` },
+            { status: 404 },
+          );
+        }
+        resolved.push({ username: uname, id: dest.id });
+      }
+      const seen = new Set<string>();
+      const unique = resolved.filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+      if (unique.length < 2) {
+        return NextResponse.json(
+          {
+            error:
+              "Los nicks tienen que corresponder a al menos dos personas distintas.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const letters = [];
+      for (const { id: recipientUserId } of unique) {
+        const letter = await insertLetter({
+          ...baseInsert,
+          recipientUserId,
+        });
+        letters.push(serializeLetter(letter, { revealContent: true }));
+      }
+      return NextResponse.json({
+        letters,
+        letter: letters[0],
+        multiCount: letters.length,
+      });
+    }
+
+    let recipientUserId: string | null = null;
+    if (recipientUsernameRaw) {
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          {
+            error:
+              "Para enviar por nombre de usuario tenés que iniciar sesión.",
+          },
+          { status: 401 },
+        );
+      }
+      const uname = normalizeUsername(recipientUsernameRaw.replace(/^@/, ""));
+      if (!isValidUsername(uname)) {
+        return NextResponse.json(
+          { error: "Nombre de usuario del destinatario no válido." },
+          { status: 400 },
+        );
+      }
+      const dest = await findUserByUsername(uname);
+      if (!dest) {
+        return NextResponse.json(
+          { error: "No existe ningún usuario con ese nombre." },
+          { status: 404 },
+        );
+      }
+      recipientUserId = dest.id;
+    }
+
+    const letter = await insertLetter({
+      ...baseInsert,
+      recipientUserId: recipientUserId ?? null,
     });
 
     return NextResponse.json({

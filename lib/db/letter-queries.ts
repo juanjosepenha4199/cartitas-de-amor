@@ -15,7 +15,7 @@ export async function findLetterById(id: string): Promise<Letter | null> {
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, is_public, is_secret, password_hash,
       author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-      scheduled_at, created_at, updated_at, user_id
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
     FROM letters
     WHERE id = ${id}
     LIMIT 1
@@ -36,7 +36,7 @@ export async function listLettersForUser(options: {
         id, content, envelope_color, flower_type, flower_density, paper_type,
         font_style, sticker, recipient_name, is_public, is_secret, password_hash,
         author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-        scheduled_at, created_at, updated_at, user_id
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
       FROM letters
       WHERE user_id = ${userId}
         AND (scheduled_at IS NULL OR scheduled_at <= NOW())
@@ -55,7 +55,7 @@ export async function listLettersForUser(options: {
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, is_public, is_secret, password_hash,
       author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-      scheduled_at, created_at, updated_at, user_id
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
     FROM letters
     WHERE user_id = ${userId}
       AND (scheduled_at IS NULL OR scheduled_at <= NOW())
@@ -77,7 +77,7 @@ export async function listLettersForClient(options: {
         id, content, envelope_color, flower_type, flower_density, paper_type,
         font_style, sticker, recipient_name, is_public, is_secret, password_hash,
         author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-        scheduled_at, created_at, updated_at, user_id
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
       FROM letters
       WHERE client_author_id = ${clientAuthorId}
         AND (scheduled_at IS NULL OR scheduled_at <= NOW())
@@ -96,7 +96,7 @@ export async function listLettersForClient(options: {
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, is_public, is_secret, password_hash,
       author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-      scheduled_at, created_at, updated_at, user_id
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
     FROM letters
     WHERE client_author_id = ${clientAuthorId}
       AND (scheduled_at IS NULL OR scheduled_at <= NOW())
@@ -118,7 +118,7 @@ export async function listPublicLetters(
         id, content, envelope_color, flower_type, flower_density, paper_type,
         font_style, sticker, recipient_name, is_public, is_secret, password_hash,
         author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-        scheduled_at, created_at, updated_at, user_id
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
       FROM letters
       WHERE is_public = true
         AND (scheduled_at IS NULL OR scheduled_at <= NOW())
@@ -137,12 +137,98 @@ export async function listPublicLetters(
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, is_public, is_secret, password_hash,
       author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-      scheduled_at, created_at, updated_at, user_id
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
     FROM letters
     WHERE is_public = true
       AND (scheduled_at IS NULL OR scheduled_at <= NOW())
     ORDER BY created_at DESC
     LIMIT ${limit}
+  `;
+  return mapRows(rows);
+}
+
+/** Cartas que te enviaron otros usuarios (destinatario sos vos, autor distinto). */
+export async function listLettersReceivedByUser(options: {
+  userId: string;
+  search: string;
+}): Promise<Letter[]> {
+  const { userId, search } = options;
+  if (search) {
+    const pattern = `%${search}%`;
+    const rows = await sql`
+      SELECT
+        id, content, envelope_color, flower_type, flower_density, paper_type,
+        font_style, sticker, recipient_name, is_public, is_secret, password_hash,
+        author_name, client_author_id, heart_count, blossom_count, sparkle_count,
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
+      FROM letters
+      WHERE recipient_user_id = ${userId}
+        AND user_id IS NOT NULL
+        AND user_id <> ${userId}
+        AND (
+          content ILIKE ${pattern}
+          OR author_name ILIKE ${pattern}
+          OR recipient_name ILIKE ${pattern}
+        )
+      ORDER BY created_at DESC
+      LIMIT 120
+    `;
+    return mapRows(rows);
+  }
+  const rows = await sql`
+    SELECT
+      id, content, envelope_color, flower_type, flower_density, paper_type,
+      font_style, sticker, recipient_name, is_public, is_secret, password_hash,
+      author_name, client_author_id, heart_count, blossom_count, sparkle_count,
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
+    FROM letters
+    WHERE recipient_user_id = ${userId}
+      AND user_id IS NOT NULL
+      AND user_id <> ${userId}
+    ORDER BY created_at DESC
+    LIMIT 120
+  `;
+  return mapRows(rows);
+}
+
+/** Cartas que te escribiste a vos mismo. */
+export async function listLettersSelfToSelf(options: {
+  userId: string;
+  search: string;
+}): Promise<Letter[]> {
+  const { userId, search } = options;
+  if (search) {
+    const pattern = `%${search}%`;
+    const rows = await sql`
+      SELECT
+        id, content, envelope_color, flower_type, flower_density, paper_type,
+        font_style, sticker, recipient_name, is_public, is_secret, password_hash,
+        author_name, client_author_id, heart_count, blossom_count, sparkle_count,
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
+      FROM letters
+      WHERE recipient_user_id = ${userId}
+        AND user_id = ${userId}
+        AND (
+          content ILIKE ${pattern}
+          OR author_name ILIKE ${pattern}
+          OR recipient_name ILIKE ${pattern}
+        )
+      ORDER BY created_at DESC
+      LIMIT 120
+    `;
+    return mapRows(rows);
+  }
+  const rows = await sql`
+    SELECT
+      id, content, envelope_color, flower_type, flower_density, paper_type,
+      font_style, sticker, recipient_name, is_public, is_secret, password_hash,
+      author_name, client_author_id, heart_count, blossom_count, sparkle_count,
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
+    FROM letters
+    WHERE recipient_user_id = ${userId}
+      AND user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT 120
   `;
   return mapRows(rows);
 }
@@ -162,14 +248,17 @@ export async function insertLetter(data: {
   passwordHash: string | null;
   clientAuthorId: string | null;
   userId: string | null;
+  recipientUserId: string | null;
+  imageAttachmentsJson: string;
   scheduledAt: Date | null;
 }): Promise<Letter> {
   const id = randomUUID();
+  const recipientId = data.recipientUserId ?? null;
   const rows = await sql`
     INSERT INTO letters (
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, author_name, is_public, is_secret,
-      password_hash, client_author_id, user_id, scheduled_at
+      password_hash, client_author_id, user_id, recipient_user_id, image_attachments, scheduled_at
     ) VALUES (
       ${id},
       ${data.content},
@@ -186,13 +275,15 @@ export async function insertLetter(data: {
       ${data.passwordHash},
       ${data.clientAuthorId},
       ${data.userId},
+      ${recipientId},
+      ${data.imageAttachmentsJson},
       ${data.scheduledAt}
     )
     RETURNING
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, is_public, is_secret, password_hash,
       author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-      scheduled_at, created_at, updated_at, user_id
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
   `;
   return mapLetterRow(rows[0] as LetterRow);
 }
@@ -210,7 +301,7 @@ export async function incrementLetterReaction(
         id, content, envelope_color, flower_type, flower_density, paper_type,
         font_style, sticker, recipient_name, is_public, is_secret, password_hash,
         author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-        scheduled_at, created_at, updated_at, user_id
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
     `;
     const r = rows[0] as LetterRow | undefined;
     return r ? mapLetterRow(r) : null;
@@ -224,7 +315,7 @@ export async function incrementLetterReaction(
         id, content, envelope_color, flower_type, flower_density, paper_type,
         font_style, sticker, recipient_name, is_public, is_secret, password_hash,
         author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-        scheduled_at, created_at, updated_at, user_id
+        scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
     `;
     const r = rows[0] as LetterRow | undefined;
     return r ? mapLetterRow(r) : null;
@@ -237,7 +328,7 @@ export async function incrementLetterReaction(
       id, content, envelope_color, flower_type, flower_density, paper_type,
       font_style, sticker, recipient_name, is_public, is_secret, password_hash,
       author_name, client_author_id, heart_count, blossom_count, sparkle_count,
-      scheduled_at, created_at, updated_at, user_id
+      scheduled_at, created_at, updated_at, user_id, recipient_user_id, image_attachments
   `;
   const r = rows[0] as LetterRow | undefined;
   return r ? mapLetterRow(r) : null;

@@ -20,5 +20,8 @@ export type LetterDto = {
   createdAt: string;
   updatedAt: string;
   userId: string | null;
+  recipientUserId: string | null;
+  /** Data URLs JPEG guardadas con la carta (vacío si es secreta y está bloqueada). */
+  imageAttachments: string[];
   score?: number;
 };

@@ -43,6 +43,36 @@ body {
   letter-spacing: 0.01em;
 }
 
+.font-great-vibes {
+  font-family: var(--font-great-vibes), cursive;
+  font-size: 1.22em;
+  line-height: 1.35;
+}
+
+.font-parisienne {
+  font-family: var(--font-parisienne), cursive;
+  font-size: 1.2em;
+  line-height: 1.35;
+}
+
+.font-indie {
+  font-family: var(--font-indie), cursive;
+  font-size: 1.08em;
+  line-height: 1.45;
+}
+
+.font-pacifico {
+  font-family: var(--font-pacifico), cursive;
+  font-size: 1.12em;
+  line-height: 1.4;
+}
+
+.font-nunito-round {
+  font-family: var(--font-nunito-round), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 @layer components {
   .select-like,
   .input-like {

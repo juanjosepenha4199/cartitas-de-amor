@@ -17,13 +17,18 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         token.sub = user.id;
+        if ("username" in user && typeof user.username === "string") {
+          token.username = user.username;
+        }
       }
       return token;
     },
     session({ session, token }) {
-      if (session.user) {
-        session.user.id = (token.id as string) ?? (token.sub as string);
-      }
+      if (!session?.user) return session;
+      session.user.id =
+        (token.id as string) ?? (token.sub as string) ?? "";
+      session.user.username =
+        typeof token.username === "string" ? token.username : "";
       return session;
     },
     authorized({ auth, request }) {

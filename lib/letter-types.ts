@@ -21,6 +21,8 @@ export type Letter = {
   createdAt: Date;
   updatedAt: Date;
   userId: string | null;
+  recipientUserId: string | null;
+  imageAttachments: string[];
 };
 
 type LetterRow = {
@@ -45,7 +47,23 @@ type LetterRow = {
   created_at: string;
   updated_at: string;
   user_id: string | null;
+  recipient_user_id: string | null;
+  image_attachments?: string | null;
 };
+
+function parseAttachmentUrls(raw: string | null | undefined): string[] {
+  if (!raw || raw === "[]") return [];
+  try {
+    const v = JSON.parse(raw) as unknown;
+    if (!Array.isArray(v)) return [];
+    return v.filter(
+      (x): x is string =>
+        typeof x === "string" && x.startsWith("data:image/"),
+    );
+  } catch {
+    return [];
+  }
+}
 
 export function mapLetterRow(r: LetterRow): Letter {
   return {
@@ -70,5 +88,7 @@ export function mapLetterRow(r: LetterRow): Letter {
     createdAt: new Date(r.created_at),
     updatedAt: new Date(r.updated_at),
     userId: r.user_id,
+    recipientUserId: r.recipient_user_id,
+    imageAttachments: parseAttachmentUrls(r.image_attachments),
   };
 }

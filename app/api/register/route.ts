@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-import { emailExists, insertUser } from "@/lib/db/users";
+import {
+  emailExists,
+  insertUser,
+  usernameExists,
+} from "@/lib/db/users";
+import { isValidUsername, normalizeUsername } from "@/lib/username";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,10 +17,20 @@ export async function POST(request: Request) {
       .trim()
       .toLowerCase();
     const password = String(body.password ?? "");
+    const usernameRaw = normalizeUsername(String(body.username ?? ""));
     const name = body.name ? String(body.name).trim().slice(0, 80) : null;
 
     if (!EMAIL_RE.test(email)) {
       return NextResponse.json({ error: "Email no válido." }, { status: 400 });
+    }
+    if (!isValidUsername(usernameRaw)) {
+      return NextResponse.json(
+        {
+          error:
+            "El nombre de usuario debe tener 3–20 caracteres, solo letras minúsculas, números y guión bajo.",
+        },
+        { status: 400 },
+      );
     }
     if (password.length < 8) {
       return NextResponse.json(
@@ -31,9 +46,17 @@ export async function POST(request: Request) {
       );
     }
 
+    if (await usernameExists(usernameRaw)) {
+      return NextResponse.json(
+        { error: "Ese nombre de usuario ya está en uso." },
+        { status: 409 },
+      );
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     await insertUser({
       email,
+      username: usernameRaw,
       name: name || null,
       passwordHash,
     });
@@ -56,6 +79,9 @@ function registerErrorMessage(e: unknown): string {
       ? String((e as { code: unknown }).code)
       : "";
 
+  if (code === "23505" && /username/i.test(raw)) {
+    return "Ese nombre de usuario ya está en uso.";
+  }
   if (code === "42P01" || /relation .* does not exist/i.test(raw)) {
     return "La base no tiene las tablas. Ejecutá lib/db/schema.sql en Neon (SQL Editor).";
   }
