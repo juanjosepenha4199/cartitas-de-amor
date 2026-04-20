@@ -22,6 +22,7 @@ import {
   MAX_LETTER_IMAGES,
 } from "@/lib/image-attach";
 import { MAX_LETTER_CONTENT_CHARS } from "@/lib/letter-limits";
+import { SCAN_DRAFT_STORAGE_KEY } from "@/lib/scan-draft";
 
 type WizardStep = 1 | 2 | 3;
 type DestinationMode = "self" | "one" | "multi";
@@ -41,6 +42,7 @@ export function LetterEditor() {
   const clientId = useClientId();
   const exportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanDraftVersionAppliedRef = useRef<number | null>(null);
   const [step, setStep] = useState<WizardStep>(1);
   const [content, setContent] = useState("");
   const [imageAttachments, setImageAttachments] = useState<string[]>([]);
@@ -76,6 +78,45 @@ export function LetterEditor() {
       return session.user.name?.trim() || session.user.username || "";
     });
   }, [status, session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem(SCAN_DRAFT_STORAGE_KEY);
+      if (!raw) return;
+      const o = JSON.parse(raw) as {
+        text?: unknown;
+        v?: unknown;
+      };
+      const text = typeof o.text === "string" ? o.text : "";
+      const v = typeof o.v === "number" ? o.v : 0;
+      if (!text.trim()) return;
+      if (scanDraftVersionAppliedRef.current === v) return;
+      scanDraftVersionAppliedRef.current = v;
+
+      let clipped = text;
+      if (clipped.length > MAX_LETTER_CONTENT_CHARS) {
+        clipped = clipped.slice(0, MAX_LETTER_CONTENT_CHARS);
+      }
+      setContent(clipped);
+      setStep(1);
+
+      window.setTimeout(() => {
+        try {
+          const cur = sessionStorage.getItem(SCAN_DRAFT_STORAGE_KEY);
+          if (!cur) return;
+          const p = JSON.parse(cur) as { v?: number };
+          if (p.v === v) {
+            sessionStorage.removeItem(SCAN_DRAFT_STORAGE_KEY);
+          }
+        } catch {
+          /* ignore */
+        }
+      }, 4000);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const onSave = useCallback(async () => {
     setError(null);

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { EmailChangeForm } from "@/components/email-change-form";
 import { EnvelopePreview } from "@/components/envelope-preview";
 import { useFavorites } from "@/hooks/useFavorites";
 import type { LetterDto } from "@/lib/api-types";
@@ -61,6 +62,17 @@ export default function PerfilPage() {
           @{session?.user?.username} · {session?.user?.email}
         </p>
       </header>
+
+      <section className="space-y-3">
+        <h2 className="font-serif-romantic text-2xl text-stone-800 dark:text-garden-50">
+          Correo electrónico
+        </h2>
+        <p className="max-w-xl text-sm text-stone-600 dark:text-garden-200/85">
+          Las notificaciones de cartas nuevas se envían a tu correo. Podés
+          cambiarlo cuando quieras; te pediremos la contraseña para confirmar.
+        </p>
+        <EmailChangeForm />
+      </section>
 
       {loading || status === "loading" ? (
         <p className="text-sm text-stone-500">Cargando…</p>

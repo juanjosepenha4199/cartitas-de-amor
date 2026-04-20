@@ -15,6 +15,7 @@ import { serializeLetter } from "@/lib/letter-serialize";
 import { attachmentsJsonFromBody } from "@/lib/image-attach";
 import { MAX_LETTER_CONTENT_CHARS } from "@/lib/letter-limits";
 import { isValidUsername, normalizeUsername } from "@/lib/username";
+import { scheduleLetterReceivedEmail } from "@/lib/email/letter-received-notification";
 
 const MAX_MULTI_RECIPIENTS = 25;
 
@@ -262,12 +263,20 @@ export async function POST(request: Request) {
       }
 
       const letters = [];
+      const senderId = session?.user?.id ?? null;
       for (const { id: recipientUserId } of unique) {
         const letter = await insertLetter({
           ...baseInsert,
           recipientUserId,
         });
         letters.push(serializeLetter(letter, { revealContent: true }));
+        scheduleLetterReceivedEmail({
+          request,
+          recipientUserId,
+          senderUserId: senderId,
+          letterId: letter.id,
+          authorDisplayName: authorName,
+        });
       }
       return NextResponse.json({
         letters,
@@ -308,6 +317,16 @@ export async function POST(request: Request) {
       ...baseInsert,
       recipientUserId: recipientUserId ?? null,
     });
+
+    if (letter.recipientUserId) {
+      scheduleLetterReceivedEmail({
+        request,
+        recipientUserId: letter.recipientUserId,
+        senderUserId: session?.user?.id ?? null,
+        letterId: letter.id,
+        authorDisplayName: authorName,
+      });
+    }
 
     return NextResponse.json({
       letter: serializeLetter(letter, { revealContent: true }),

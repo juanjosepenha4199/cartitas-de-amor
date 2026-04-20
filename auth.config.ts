@@ -17,6 +17,9 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         token.sub = user.id;
+        if (user.email) {
+          token.email = user.email;
+        }
         if ("username" in user && typeof user.username === "string") {
           token.username = user.username;
         }
@@ -29,6 +32,9 @@ export const authConfig: NextAuthConfig = {
         (token.id as string) ?? (token.sub as string) ?? "";
       session.user.username =
         typeof token.username === "string" ? token.username : "";
+      if (typeof token.email === "string") {
+        session.user.email = token.email;
+      }
       return session;
     },
     authorized({ auth, request }) {

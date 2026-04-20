@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { ScanLine } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
 export function SiteHeader({
@@ -46,6 +47,13 @@ export function SiteHeader({
                 className="rounded-full bg-stone-900 px-3 py-1.5 text-sm text-white shadow-sm transition hover:bg-stone-800 dark:bg-garden-100 dark:text-garden-900 dark:hover:bg-white"
               >
                 Crear
+              </Link>
+              <Link
+                href="/escanear"
+                className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white/70 px-3 py-1.5 text-sm text-stone-800 transition hover:border-stone-300 dark:border-white/15 dark:bg-white/5 dark:text-garden-50 dark:hover:border-white/25"
+              >
+                <ScanLine className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                Escanear
               </Link>
               <Link
                 href="/jardin"
