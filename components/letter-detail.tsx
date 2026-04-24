@@ -8,6 +8,7 @@ import { EnvelopePreview } from "@/components/envelope-preview";
 import { useSession } from "next-auth/react";
 import { useClientId } from "@/hooks/useClientId";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useReadLetterIds } from "@/hooks/useReadLetterIds";
 import { FONT_STYLES, PAPER_TYPES } from "@/lib/options";
 import { playSoftChime } from "@/lib/sound";
 import type { LetterDto } from "@/lib/api-types";
@@ -16,6 +17,7 @@ export function LetterDetail({ id }: { id: string }) {
   const { status } = useSession();
   const clientId = useClientId();
   const { toggle, isFavorite } = useFavorites();
+  const { markRead } = useReadLetterIds();
   const reduce = useReducedMotion();
   const [letter, setLetter] = useState<LetterDto | null>(null);
   const [open, setOpen] = useState(0);
@@ -101,6 +103,10 @@ export function LetterDetail({ id }: { id: string }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [letter, reduce, soundOnOpen, userOpened]);
+
+  useEffect(() => {
+    if (userOpened && letter && !letter.locked) markRead(id);
+  }, [userOpened, letter, id, markRead]);
 
   useEffect(() => {
     if (!letter || letter.locked || !userOpened || focusReading) return;

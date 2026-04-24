@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { EnvelopePreview } from "@/components/envelope-preview";
 import { GardenMeadow } from "@/components/garden-meadow";
 import { useClientId } from "@/hooks/useClientId";
+import { useReadLetterIds } from "@/hooks/useReadLetterIds";
 import type { LetterDto } from "@/lib/api-types";
 
 type ExploreFilter = "recent" | "beautiful";
@@ -14,6 +15,7 @@ type ExploreFilter = "recent" | "beautiful";
 export function GardenView() {
   const { status, data: session } = useSession();
   const clientId = useClientId();
+  const { readIds } = useReadLetterIds();
   const [mode, setMode] = useState<"mine" | "explore">("mine");
   const [exploreFilter, setExploreFilter] = useState<ExploreFilter>("recent");
   const [q, setQ] = useState("");
@@ -325,7 +327,7 @@ export function GardenView() {
                 (en crear carta → “Enviar a un usuario”) para que llegue acá.
               </p>
             ) : (
-              <GardenMeadow letters={received} variant="incoming" />
+              <GardenMeadow letters={received} variant="incoming" readIds={readIds} />
             )}
           </section>
 
@@ -345,7 +347,7 @@ export function GardenView() {
                 podés enviarte a @{session?.user?.username ?? "tu usuario"}.
               </p>
             ) : (
-              <GardenMeadow letters={selfGarden} variant="self" />
+              <GardenMeadow letters={selfGarden} variant="self" readIds={readIds} />
             )}
           </section>
         </div>
